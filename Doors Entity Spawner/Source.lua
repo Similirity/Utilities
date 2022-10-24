@@ -1,3 +1,5 @@
+--Original Source.lua by RegularVynixu (goated fr)
+
 -- Services
 
 local Players = game:GetService("Players")
@@ -24,6 +26,7 @@ local DefaultConfig = {
     HeightOffset = 0,
     CanKill = true,
     BreakLights = true,
+    CanJumpscare = true,
     FlickerLights = {
         true,
         1,
@@ -44,16 +47,16 @@ local Creator = {}
 
 -- Misc Functions
 
-local function drag(model, objB, speed)
+local function drag(objA, objB, speed)
     local reached = false
 
     local con; con = RS.Stepped:Connect(function(_, step)
-        local posA = model.PrimaryPart.Position
+        local posA = objA.Position
         local posB = objB.Position
         local diff = Vector3.new(posB.X, 0, posB.Z) - Vector3.new(posA.X, 0, posA.Z)
 
         if diff.Magnitude > 0.1 then
-            model:SetPrimaryPartCFrame(CFrame.new(posA + diff.Unit * math.min(step * speed, diff.Magnitude - 0.05))
+            objA.CFrame = CFrame.new(posA + diff.Unit * math.min(step * speed, diff.Magnitude - 0.05))
         else
             reached = true
         end
@@ -146,7 +149,18 @@ Creator.runEntity = function(entity)
 
             if found and found.IsDescendantOf(found, Char) then
                 movementCon:Disconnect()
-                Hum.Health = 0
+                --jumpscare part that i put in for funni
+                if entity.Config.CanJumpscare then
+                    entity.Config.Model.RushNew.ScreenGUI.Parent = LocalPlayer.PlayerGUI
+                    entity.Config.Model.RushNew.ScreenGUI.Enabled = true
+                    entity.Config.Model.RushNew.ScreenGUI.Jumpscare:Play()
+                    wait(0.05)
+                    if entity.Config.Model.RushNew.ScreenGUI.Enabled = false
+                        Hum.Health = 0
+                    end
+                else
+                    Hum.Health = 0
+                end
 
                 if #entity.Config.CustomDialog > 0 then
                     ReSt.GameStats["Player_".. Plr.Name].Total.DeathCause.Value = entity.Model.Name
@@ -172,10 +186,8 @@ Creator.runEntity = function(entity)
     end)
 
     -- Pre-cycle setup
-
-    local firstRoom = workspace.CurrentRooms:GetChildren()[1]
-
-    entity.Model.PrimaryPart.CFrame = (firstRoom:FindFirstChild("RoomStart") and firstRoom.RoomStart.CFrame or nodes[1].CFrame + Vector3.new(0, 3.5, 0)) + Vector3.new(0, entity.Config.HeightOffset, 0)
+    
+    entity.Model.PrimaryPart.CFrame = workspace.CurrentRooms:GetChildren()[1].RoomStart.CFrame + Vector3.new(0, entity.Config.HeightOffset, 0)
     entity.Model.Parent = workspace
 
     if entity.Config.FlickerLights[1] then
@@ -194,12 +206,12 @@ Creator.runEntity = function(entity)
                 ModuleScripts.ModuleEvents.breakLights(nodes[i].Parent.Parent)
             end
 
-            drag(entity.Model, nodes[i], entity.Config.Speed)
+            drag(entity.Model.PrimaryPart, nodes[i], entity.Config.Speed)
         end
 
         if cycles.Max > 1 then
             for i = #nodes, 1, -1 do
-                drag(entity.Model., nodes[i], entity.Config.Speed)
+                drag(entity.Model.PrimaryPart, nodes[i], entity.Config.Speed)
             end
         end
 
